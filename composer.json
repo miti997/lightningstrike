@@ -1,0 +1,28 @@
+{
+    "name": "miti/lightningstrike",
+    "description": "Lightweight framework for quick developement of websites",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Lightningstrike\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Lightningstrike\\Tests\\": "tests/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Gozman Pop Dumitru",
+            "email": "miti_or_2010@yahoo.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require-dev": {
+        "phpunit/phpunit": "^13.0",
+        "phpstan/phpstan": "^2.1",
+        "squizlabs/php_codesniffer": "^4.0"
+    }
+}
