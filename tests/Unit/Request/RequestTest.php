@@ -180,4 +180,83 @@ class RequestTest extends TestCase
         $this->assertSame($header1Value, $request->getHeader($input1));
         $this->assertSame($header2Value, $request->getHeader($input2));
     }
+
+    public function testGetAllCookiesEmpty(): void
+    {
+        $request = new Request();
+
+        $this->assertSame([], $request->getCookies());
+    }
+
+    public function testGetAllCookiesNonEmpty(): void
+    {
+        $expected = [
+            'user_id' => '123',
+            'theme' => 'dark',
+        ];
+
+        $_COOKIE = $expected;
+
+        $request = new Request();
+
+        $this->assertSame($expected, $request->getCookies());
+    }
+
+    public function testGetCookieEmptyCoockieArray(): void
+    {
+        $request = new Request();
+
+        $this->assertSame(null, $request->getCookie('test'));
+    }
+
+    public function testGetCookieNonExistentValue(): void
+    {
+        $_COOKIE = [
+            'succes' => 'success'
+        ];
+
+        $request = new Request();
+
+        $this->assertSame(null, $request->getCookie('failure'));
+    }
+
+    public function testGetCookieExistentValue(): void
+    {
+        $_COOKIE = [
+            'success' => 'success'
+        ];
+
+        $request = new Request();
+
+        $this->assertSame('success', $request->getCookie('success'));
+    }
+
+    public function testGetCookieExistentValueArray(): void
+    {
+        $expected = ['success1', 'success2'];
+        $_COOKIE = ['success' => $expected];
+
+        $request = new Request();
+
+        $this->assertSame($expected, $request->getCookie('success'));
+    }
+
+    public function testGetCookieExistentValueArrayWithPath(): void
+    {
+        $_COOKIE = ['success' => ['success1', 'success2']];
+
+        $request = new Request();
+
+        $this->assertSame('success1', $request->getCookie('success.0'));
+    }
+
+    public function testHasCookie(): void
+    {
+        $_COOKIE = ['success' => 'success'];
+
+        $request = new Request();
+
+        $this->assertTrue($request->hasCookie('success'));
+        $this->assertFalse($request->hasCookie('failure'));
+    }
 }

@@ -4,21 +4,27 @@ namespace Lightningstrike\Request;
 
 class Request implements RequestInterface
 {
-    public const REQUEST_METHOD_GET = 'GET';
-    public const REQUEST_METHOD_POST = 'POST';
+    public const string METHOD_GET = 'GET';
+    public const string METHOD_POST = 'POST';
+    private const string COOKIE = 'COOKIE';
 
+    /** @var array<string,mixed> */
     private array $headers = [];
 
     /** @phpstan-ignore-next-line */
     private function getByPath(string $path, string $requestMethod): string|array|null
     {
         switch ($requestMethod) {
-            case self::REQUEST_METHOD_GET:
+            case self::METHOD_GET:
                 $requestData = $_GET;
                 break;
 
-            case self::REQUEST_METHOD_POST:
+            case self::METHOD_POST:
                 $requestData = $_POST;
+                break;
+
+            case self::COOKIE:
+                $requestData = $_COOKIE;
                 break;
 
             default:
@@ -64,7 +70,7 @@ class Request implements RequestInterface
      */
     public function getQueryParam(string $path): string|array|null
     {
-        return $this->getByPath($path, self::REQUEST_METHOD_GET);
+        return $this->getByPath($path, self::METHOD_GET);
     }
 
     /**
@@ -80,21 +86,21 @@ class Request implements RequestInterface
      */
     public function getBodyParam(string $path): string|array|null
     {
-        return $this->getByPath($path, self::REQUEST_METHOD_POST);
+        return $this->getByPath($path, self::METHOD_POST);
     }
 
     public function isGet(): bool
     {
-        return $_SERVER['REQUEST_METHOD'] === self::REQUEST_METHOD_GET;
+        return $_SERVER['REQUEST_METHOD'] === self::METHOD_GET;
     }
 
     public function isPost(): bool
     {
-        return $_SERVER['REQUEST_METHOD'] === self::REQUEST_METHOD_POST;
+        return $_SERVER['REQUEST_METHOD'] === self::METHOD_POST;
     }
 
     /**
-     * @return array<string, string>
+     * @return array<string, mixed>
      */
     public function getHeaders(): array
     {
@@ -102,33 +108,63 @@ class Request implements RequestInterface
             return $this->headers;
         }
 
-        if (function_exists('getallheaders')) {
-            $this->headers = getallheaders();
-        } else {
-            foreach ($_SERVER as $key => $value) {
-                if (str_starts_with($key, 'HTTP_')) {
-                    $name = str_replace('_', '-', substr($key, 5));
-                } elseif (in_array($key, ['CONTENT_TYPE', 'CONTENT_LENGTH', 'CONTENT_MD5'])) {
-                    $name = str_replace('_', '-', $key);
-                } else {
-                    continue;
-                }
-
-                $parts = explode('-', strtolower($name));
-                $name = implode('-', array_map(fn($p) => ucfirst($p), $parts));
-                $this->headers[$name] = $value;
-            }
-        }
+        $this->headers = function_exists('\getallheaders') ? \getallheaders() : $this->getHeadersFromServer();
 
         return $this->headers;
     }
 
-    public function getHeader(string $name): ?string
+    /**
+     * @return array<string, mixed>
+     */
+    private function getHeadersFromServer(): array
+    {
+        $headers = [];
+        foreach ($_SERVER as $key => $value) {
+            if (str_starts_with($key, 'HTTP_')) {
+                $name = str_replace('_', '-', substr($key, 5));
+            } elseif (in_array($key, ['CONTENT_TYPE', 'CONTENT_LENGTH', 'CONTENT_MD5'])) {
+                $name = str_replace('_', '-', $key);
+            } else {
+                continue;
+            }
+
+            $parts = explode('-', strtolower($name));
+            $name = implode('-', array_map(fn($p) => ucfirst($p), $parts));
+            $headers[$name] = $value;
+        }
+
+        return $headers;
+    }
+
+    public function getHeader(string $name): mixed
     {
         $this->getHeaders();
         $parts = explode('-', strtolower($name));
         $name = implode('-', array_map(fn($p) => ucfirst($p), $parts));
 
         return $this->headers[$name];
+    }
+
+    /**
+     * @return array<int|string, mixed>
+     */
+    public function getCookies(): array
+    {
+        return $_COOKIE;
+    }
+
+    /**
+     * @return array<int|string, mixed>
+     */
+    public function getCookie(string $cookie): string|array|null
+    {
+        return $this->getByPath($cookie, self::COOKIE);
+    }
+
+    public function hasCookie(string $cookie): bool
+    {
+        $cookie = $this->getCookie($cookie);
+
+        return $cookie !== null;
     }
 }
