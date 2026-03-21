@@ -2,6 +2,8 @@
 
 namespace Lightningstrike\Request;
 
+use Lightningstrike\Service\HeadersProviderInterface;
+
 class Request implements RequestInterface
 {
     public const string METHOD_GET = 'GET';
@@ -10,6 +12,11 @@ class Request implements RequestInterface
 
     /** @var array<string,mixed> */
     private array $headers = [];
+
+    public function __construct(
+        private readonly HeadersProviderInterface $headersProvider
+    ) {
+    }
 
     /** @phpstan-ignore-next-line */
     private function getByPath(string $path, string $requestMethod): string|array|null
@@ -108,32 +115,9 @@ class Request implements RequestInterface
             return $this->headers;
         }
 
-        $this->headers = function_exists('\getallheaders') ? \getallheaders() : $this->getHeadersFromServer();
+        $this->headers = $this->headersProvider->getHeaders();
 
         return $this->headers;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function getHeadersFromServer(): array
-    {
-        $headers = [];
-        foreach ($_SERVER as $key => $value) {
-            if (str_starts_with($key, 'HTTP_')) {
-                $name = str_replace('_', '-', substr($key, 5));
-            } elseif (in_array($key, ['CONTENT_TYPE', 'CONTENT_LENGTH', 'CONTENT_MD5'])) {
-                $name = str_replace('_', '-', $key);
-            } else {
-                continue;
-            }
-
-            $parts = explode('-', strtolower($name));
-            $name = implode('-', array_map(fn($p) => ucfirst($p), $parts));
-            $headers[$name] = $value;
-        }
-
-        return $headers;
     }
 
     public function getHeader(string $name): mixed

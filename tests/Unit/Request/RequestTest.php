@@ -3,15 +3,29 @@
 namespace Lightningstrike\Tests\Unit\Request;
 
 use Lightningstrike\Request\Request;
+use Lightningstrike\Service\HeadersProviderInterface;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 #[CoversClass(Request::class)]
 class RequestTest extends TestCase
 {
+    /**
+     * @param array<string,mixed> $return
+     */
+    private function addMockHeadersProvider(int $callCount, array $return = []): HeadersProviderInterface
+    {
+        $provider = $this->createMock(HeadersProviderInterface::class);
+        $provider->expects($this->exactly($callCount))
+            ->method('getHeaders')
+            ->willReturn($return);
+
+        return $provider;
+    }
+
     public function testGetQueryParamsEmptyGet(): void
     {
-        $request = new Request();
+        $request = new Request($this->addMockHeadersProvider(callCount: 0));
 
         $this->assertEquals($_GET, $request->getQueryParams());
     }
@@ -19,14 +33,14 @@ class RequestTest extends TestCase
     public function testGetQueryParamsGet(): void
     {
         $_GET = ['test' => 'test'];
-        $request = new Request();
+        $request = new Request($this->addMockHeadersProvider(callCount: 0));
 
         $this->assertEquals($_GET, $request->getQueryParams());
     }
 
     public function testGetQueryParamEmptyGet(): void
     {
-        $request = new Request();
+        $request = new Request($this->addMockHeadersProvider(callCount: 0));
 
         $this->assertEquals(null, $request->getQueryParam('something'));
     }
@@ -35,7 +49,7 @@ class RequestTest extends TestCase
     {
         $paramKey = $paramValue = 'test';
         $_GET = [$paramKey => $paramValue];
-        $request = new Request();
+        $request = new Request($this->addMockHeadersProvider(callCount: 0));
 
         $this->assertEquals($paramValue, $request->getQueryParam($paramKey));
     }
@@ -49,7 +63,7 @@ class RequestTest extends TestCase
         ];
 
         $_GET = [$paramKey => $paramValue];
-        $request = new Request();
+        $request = new Request($this->addMockHeadersProvider(callCount: 0));
 
         $this->assertEquals('test1', $request->getQueryParam($paramKey . '.test1'));
         $this->assertEquals('test2', $request->getQueryParam($paramKey . '.0'));
@@ -57,7 +71,7 @@ class RequestTest extends TestCase
 
     public function testGetBodyEmptyPost(): void
     {
-        $request = new Request();
+        $request = new Request($this->addMockHeadersProvider(callCount: 0));
 
         $this->assertEquals($_POST, $request->getBody());
     }
@@ -65,14 +79,14 @@ class RequestTest extends TestCase
     public function testGetBodyPost(): void
     {
         $_POST = ['test' => 'test'];
-        $request = new Request();
+        $request = new Request($this->addMockHeadersProvider(callCount: 0));
 
         $this->assertEquals($_POST, $request->getBody());
     }
 
     public function testGetBodyParamEmptyPost(): void
     {
-        $request = new Request();
+        $request = new Request($this->addMockHeadersProvider(callCount: 0));
 
         $this->assertEquals(null, $request->getBodyParam('something'));
     }
@@ -81,7 +95,7 @@ class RequestTest extends TestCase
     {
         $paramKey = $paramValue = 'test';
         $_POST = [$paramKey => $paramValue];
-        $request = new Request();
+        $request = new Request($this->addMockHeadersProvider(callCount: 0));
 
         $this->assertEquals($paramValue, $request->getBodyParam($paramKey));
     }
@@ -95,7 +109,7 @@ class RequestTest extends TestCase
         ];
 
         $_POST = [$paramKey => $paramValue];
-        $request = new Request();
+        $request = new Request($this->addMockHeadersProvider(callCount: 0));
 
         $this->assertEquals('test1', $request->getBodyParam($paramKey . '.test1'));
         $this->assertEquals('test2', $request->getBodyParam($paramKey . '.0'));
@@ -105,7 +119,7 @@ class RequestTest extends TestCase
     {
         $_SERVER['REQUEST_METHOD'] = 'GET';
 
-        $request = new Request();
+        $request = new Request($this->addMockHeadersProvider(callCount: 0));
 
         $this->assertTrue($request->isGet());
     }
@@ -114,7 +128,7 @@ class RequestTest extends TestCase
     {
         $_SERVER['REQUEST_METHOD'] = 'POST';
 
-        $request = new Request();
+        $request = new Request($this->addMockHeadersProvider(callCount: 0));
 
         $this->assertTrue($request->isPost());
     }
@@ -132,7 +146,15 @@ class RequestTest extends TestCase
         $_SERVER[$header1] = $header1Value;
         $_SERVER[$header2] = $header2Value;
 
-        $request = new Request();
+        $request = new Request(
+            $this->addMockHeadersProvider(
+                callCount: 1,
+                return:  [
+                    $requestForm1 => $header1Value,
+                    $requestForm2 => $header2Value,
+                ],
+            )
+        );
 
         $this->assertSame(
             [
@@ -156,7 +178,15 @@ class RequestTest extends TestCase
         $_SERVER[$header1] = $header1Value;
         $_SERVER[$header2] = $header2Value;
 
-        $request = new Request();
+        $request = new Request(
+            $this->addMockHeadersProvider(
+                callCount: 1,
+                return:  [
+                    $requestForm1 => $header1Value,
+                    $requestForm2 => $header2Value,
+                ],
+            )
+        );
 
         $this->assertSame($header1Value, $request->getHeader($requestForm1));
         $this->assertSame($header2Value, $request->getHeader($requestForm2));
@@ -175,7 +205,18 @@ class RequestTest extends TestCase
         $input1 = 'contEnt-tYpe';
         $input2 = 'ACCEPT-language';
 
-        $request = new Request();
+        $requestForm1 = 'Content-Type';
+        $requestForm2 = 'Accept-Language';
+
+        $request = new Request(
+            $this->addMockHeadersProvider(
+                callCount: 1,
+                return:  [
+                    $requestForm1 => $header1Value,
+                    $requestForm2 => $header2Value,
+                ],
+            )
+        );
 
         $this->assertSame($header1Value, $request->getHeader($input1));
         $this->assertSame($header2Value, $request->getHeader($input2));
@@ -183,7 +224,7 @@ class RequestTest extends TestCase
 
     public function testGetAllCookiesEmpty(): void
     {
-        $request = new Request();
+        $request = new Request($this->addMockHeadersProvider(callCount: 0));
 
         $this->assertSame([], $request->getCookies());
     }
@@ -197,14 +238,14 @@ class RequestTest extends TestCase
 
         $_COOKIE = $expected;
 
-        $request = new Request();
+        $request = new Request($this->addMockHeadersProvider(callCount: 0));
 
         $this->assertSame($expected, $request->getCookies());
     }
 
     public function testGetCookieEmptyCoockieArray(): void
     {
-        $request = new Request();
+        $request = new Request($this->addMockHeadersProvider(callCount: 0));
 
         $this->assertSame(null, $request->getCookie('test'));
     }
@@ -215,7 +256,7 @@ class RequestTest extends TestCase
             'succes' => 'success'
         ];
 
-        $request = new Request();
+        $request = new Request($this->addMockHeadersProvider(callCount: 0));
 
         $this->assertSame(null, $request->getCookie('failure'));
     }
@@ -226,7 +267,7 @@ class RequestTest extends TestCase
             'success' => 'success'
         ];
 
-        $request = new Request();
+        $request = new Request($this->addMockHeadersProvider(callCount: 0));
 
         $this->assertSame('success', $request->getCookie('success'));
     }
@@ -236,7 +277,7 @@ class RequestTest extends TestCase
         $expected = ['success1', 'success2'];
         $_COOKIE = ['success' => $expected];
 
-        $request = new Request();
+        $request = new Request($this->addMockHeadersProvider(callCount: 0));
 
         $this->assertSame($expected, $request->getCookie('success'));
     }
@@ -245,7 +286,7 @@ class RequestTest extends TestCase
     {
         $_COOKIE = ['success' => ['success1', 'success2']];
 
-        $request = new Request();
+        $request = new Request($this->addMockHeadersProvider(callCount: 0));
 
         $this->assertSame('success1', $request->getCookie('success.0'));
     }
@@ -254,7 +295,7 @@ class RequestTest extends TestCase
     {
         $_COOKIE = ['success' => 'success'];
 
-        $request = new Request();
+        $request = new Request($this->addMockHeadersProvider(callCount: 0));
 
         $this->assertTrue($request->hasCookie('success'));
         $this->assertFalse($request->hasCookie('failure'));
