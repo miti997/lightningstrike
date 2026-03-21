@@ -3,9 +3,12 @@
 namespace Lightningstrike\Request;
 
 use Lightningstrike\Service\HeadersProviderInterface;
+use Lightningstrike\Trait\ReadsArrayPaths;
 
 class Request implements RequestInterface
 {
+    use ReadsArrayPaths;
+
     public const string METHOD_GET = 'GET';
     public const string METHOD_POST = 'POST';
     private const string COOKIE = 'COOKIE';
@@ -18,7 +21,9 @@ class Request implements RequestInterface
     ) {
     }
 
-    /** @phpstan-ignore-next-line */
+    /**
+     * @return array<int|string, mixed>
+     */
     private function getByPath(string $path, string $requestMethod): string|array|null
     {
         switch ($requestMethod) {
@@ -39,29 +44,12 @@ class Request implements RequestInterface
                 break;
         }
 
-        if ($requestData === []) {
+        $result = $this->getByPathFromArray($path, $requestData);
+        if (!is_string($result) && !is_array($result)) {
             return null;
         }
 
-        $params = explode('.', $path);
-
-        $paramValue = null;
-
-        foreach ($params as $param) {
-            $param = is_numeric($param) ? (int) $param : $param;
-
-            /** @phpstan-ignore-next-line */
-            $paramValue = $requestData[$param] ?? null;
-
-            if ($paramValue === null) {
-                break;
-            }
-
-            $requestData = $requestData[$param];
-        }
-
-        /** @phpstan-ignore-next-line */
-        return $paramValue;
+        return $result;
     }
 
     /**
