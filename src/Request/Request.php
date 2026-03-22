@@ -13,9 +13,6 @@ class Request implements RequestInterface
     public const string METHOD_POST = 'POST';
     private const string COOKIE = 'COOKIE';
 
-    /** @var array<string,mixed> */
-    private array $headers = [];
-
     public function __construct(
         private readonly HeadersProviderInterface $headersProvider
     ) {
@@ -99,22 +96,16 @@ class Request implements RequestInterface
      */
     public function getHeaders(): array
     {
-        if ($this->headers !== []) {
-            return $this->headers;
-        }
-
-        $this->headers = $this->headersProvider->getHeaders();
-
-        return $this->headers;
+        return $this->headersProvider->getHeaders();
     }
 
     public function getHeader(string $name): mixed
     {
-        $this->getHeaders();
+        $headers = $this->getHeaders();
         $parts = explode('-', strtolower($name));
         $name = implode('-', array_map(fn($p) => ucfirst($p), $parts));
 
-        return $this->headers[$name];
+        return $headers[$name] ?? null;
     }
 
     /**

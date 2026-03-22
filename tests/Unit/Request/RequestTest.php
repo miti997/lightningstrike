@@ -6,131 +6,144 @@ use Lightningstrike\Request\Request;
 use Lightningstrike\Service\HeadersProviderInterface;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\MockObject\MockObject;
 
 #[CoversClass(Request::class)]
 class RequestTest extends TestCase
 {
-    /**
-     * @param array<string,mixed> $return
-     */
-    private function addMockHeadersProvider(int $callCount, array $return = []): HeadersProviderInterface
-    {
-        $provider = $this->createMock(HeadersProviderInterface::class);
-        $provider->expects($this->exactly($callCount))
-            ->method('getHeaders')
-            ->willReturn($return);
+    private Request $request;
 
-        return $provider;
+    private HeadersProviderInterface&MockObject $headersProvider;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->headersProvider = $this->createMock(HeadersProviderInterface::class);
+
+        $this->request = new Request($this->headersProvider);
     }
 
-    public function testGetQueryParamsEmptyGet(): void
+    #[DataProvider('requestAllDataProvider')]
+    public function testGetQueryParams(array $expected): void
     {
-        $request = new Request($this->addMockHeadersProvider(callCount: 0));
+        $_GET = $expected;
 
-        $this->assertEquals($_GET, $request->getQueryParams());
+        $this->headersProvider->expects($this->never())->method('getHeaders');
+
+        $this->assertSame($expected, $this->request->getQueryParams());
     }
 
-    public function testGetQueryParamsGet(): void
+    public static function requestAllDataProvider(): array
     {
-        $_GET = ['test' => 'test'];
-        $request = new Request($this->addMockHeadersProvider(callCount: 0));
-
-        $this->assertEquals($_GET, $request->getQueryParams());
-    }
-
-    public function testGetQueryParamEmptyGet(): void
-    {
-        $request = new Request($this->addMockHeadersProvider(callCount: 0));
-
-        $this->assertEquals(null, $request->getQueryParam('something'));
-    }
-
-    public function testGetQueryParamGet(): void
-    {
-        $paramKey = $paramValue = 'test';
-        $_GET = [$paramKey => $paramValue];
-        $request = new Request($this->addMockHeadersProvider(callCount: 0));
-
-        $this->assertEquals($paramValue, $request->getQueryParam($paramKey));
-    }
-
-    public function testGetQueryParamWithPath(): void
-    {
-        $paramKey = 'test';
-        $paramValue = [
-            'test1' => 'test1',
-            'test2'
+        return [
+            'Empty request' => [[]],
+            'Filled request' => [['param1' => 'value1']]
         ];
-
-        $_GET = [$paramKey => $paramValue];
-        $request = new Request($this->addMockHeadersProvider(callCount: 0));
-
-        $this->assertEquals('test1', $request->getQueryParam($paramKey . '.test1'));
-        $this->assertEquals('test2', $request->getQueryParam($paramKey . '.0'));
     }
 
-    public function testGetBodyEmptyPost(): void
+    #[DataProvider('requestAllDataProvider')]
+    public function testGetBody(array $expected): void
     {
-        $request = new Request($this->addMockHeadersProvider(callCount: 0));
+        $_POST = $expected;
 
-        $this->assertEquals($_POST, $request->getBody());
+        $this->headersProvider->expects($this->never())->method('getHeaders');
+
+        $this->assertSame($expected, $this->request->getBody());
     }
 
-    public function testGetBodyPost(): void
-    {
-        $_POST = ['test' => 'test'];
-        $request = new Request($this->addMockHeadersProvider(callCount: 0));
 
-        $this->assertEquals($_POST, $request->getBody());
+    #[DataProvider('requestOneDataProvider')]
+    public function testGetQueryParam(array $get, string $path, mixed $expected): void
+    {
+        $_GET = $get;
+
+        $this->headersProvider->expects($this->never())->method('getHeaders');
+
+        $this->assertSame($expected, $this->request->getQueryParam($path));
     }
 
-    public function testGetBodyParamEmptyPost(): void
+    public static function requestOneDataProvider(): array
     {
-        $request = new Request($this->addMockHeadersProvider(callCount: 0));
-
-        $this->assertEquals(null, $request->getBodyParam('something'));
-    }
-
-    public function testGetBodyParamParamPost(): void
-    {
-        $paramKey = $paramValue = 'test';
-        $_POST = [$paramKey => $paramValue];
-        $request = new Request($this->addMockHeadersProvider(callCount: 0));
-
-        $this->assertEquals($paramValue, $request->getBodyParam($paramKey));
-    }
-
-    public function testGetBodyParamWithPath(): void
-    {
-        $paramKey = 'test';
-        $paramValue = [
-            'test1' => 'test1',
-            'test2'
+        return [
+            'Empty request' => [
+                [],
+                'param1',
+                null,
+            ],
+            'No matching param' => [
+                ['param1' => 'value1'],
+                'param2',
+                null,
+            ],
+            'Matching param' => [
+                ['param1' => 'value1'],
+                'param1',
+                'value1',
+            ],
+            'Multi dimensional array - full array' => [
+                [
+                    'param' => [
+                        'value1',
+                        'value2'
+                    ],
+                ],
+                'param',
+                [
+                    'value1',
+                    'value2'
+                ],
+            ],
+            'Multi dimensional array - one value - numeric key' => [
+                [
+                    'param' => [
+                        'value1',
+                        'value2'
+                    ],
+                ],
+                'param.0',
+                'value1',
+            ],
+            'Multi dimensional array - one value - alpha key' => [
+                [
+                    'param' => [
+                        'subkey' => 'value1',
+                    ],
+                ],
+                'param.subkey',
+                'value1',
+            ],
         ];
+    }
 
-        $_POST = [$paramKey => $paramValue];
-        $request = new Request($this->addMockHeadersProvider(callCount: 0));
 
-        $this->assertEquals('test1', $request->getBodyParam($paramKey . '.test1'));
-        $this->assertEquals('test2', $request->getBodyParam($paramKey . '.0'));
+    #[DataProvider('requestOneDataProvider')]
+    public function testGetBodyParam(array $post, string $path, mixed $expected): void
+    {
+        $_POST = $post;
+
+        $this->headersProvider->expects($this->never())->method('getHeaders');
+
+        $this->assertSame($expected, $this->request->getBodyParam($path));
     }
 
     public function testIsGet(): void
     {
         $_SERVER['REQUEST_METHOD'] = 'GET';
 
-        $request = new Request($this->addMockHeadersProvider(callCount: 0));
+        $this->headersProvider->expects($this->never())->method('getHeaders');
 
-        $this->assertTrue($request->isGet());
+        $this->assertTrue($this->request->isGet());
     }
 
     public function testIsPost(): void
     {
         $_SERVER['REQUEST_METHOD'] = 'POST';
 
-        $request = new Request($this->addMockHeadersProvider(callCount: 0));
+        $this->headersProvider->expects($this->never())->method('getHeaders');
 
-        $this->assertTrue($request->isPost());
+        $this->assertTrue($this->request->isPost());
     }
 
     public function testGetAllHeaders(): void
@@ -146,158 +159,168 @@ class RequestTest extends TestCase
         $_SERVER[$header1] = $header1Value;
         $_SERVER[$header2] = $header2Value;
 
-        $request = new Request(
-            $this->addMockHeadersProvider(
-                callCount: 1,
-                return:  [
-                    $requestForm1 => $header1Value,
-                    $requestForm2 => $header2Value,
-                ],
-            )
-        );
+        $expected =  [
+            $requestForm1 => $header1Value,
+            $requestForm2 => $header2Value,
+        ];
+
+        $this->headersProvider->expects($this->once())
+            ->method('getHeaders')
+            ->willReturn($expected);
 
         $this->assertSame(
-            [
-                $requestForm1 => $header1Value,
-                $requestForm2 => $header2Value,
+            $expected,
+            $this->request->getHeaders()
+        );
+    }
+
+    #[DataProvider('getHeaderProvider')]
+    public function testGetHeaderProperInput(
+        array $headers,
+        array $processedHeaders,
+        string $searchByHeaderName,
+        ?string $expectedHeaderValue
+    ): void
+    {
+        $_SERVER = $headers;
+
+        $this->headersProvider->expects($this->once())
+            ->method('getHeaders')
+            ->willReturn($processedHeaders);
+
+        $this->assertSame($expectedHeaderValue, $this->request->getHeader($searchByHeaderName));
+    }
+
+    public static function getHeaderProvider(): array
+    {
+        $contentTypeProcessedName = 'Content-Type';
+        $acceptLanguageProcessedName = 'Accept-Language';
+        $contentTypeValue = 'text/html';
+        $acceptLanguageValue = 'ro-RO';
+        $headers = [
+            'CONTENT_TYPE' => $contentTypeValue,
+            'HTTP_ACCEPT_LANGUAGE' => $acceptLanguageValue,
+        ];
+
+        $processedHeaders = [
+            $contentTypeProcessedName => $contentTypeValue,
+            $acceptLanguageProcessedName => $acceptLanguageValue,
+        ];
+        return [
+            "Proper header name - no http" => [
+                $headers,
+                $processedHeaders,
+                $contentTypeProcessedName,
+                $contentTypeValue,
             ],
-            $request->getHeaders()
-        );
+            "Proper header name - http" => [
+                $headers,
+                $processedHeaders,
+                $acceptLanguageProcessedName,
+                $acceptLanguageValue,
+            ],
+            "Mixed case header name = no http" => [
+                $headers,
+                $processedHeaders,
+                'contEnt-tYpe',
+                $contentTypeValue,
+            ],
+            "Mixed case header name = http" => [
+                $headers,
+                $processedHeaders,
+                'ACCEPT-language',
+                $acceptLanguageValue,
+            ],
+            'Non existent header' => [
+                $headers,
+                $processedHeaders,
+                'no-header',
+                null,
+            ],
+        ];
     }
 
-    public function testGetHeaderProperInput(): void
+    #[DataProvider('getAllCookiesDataProvider')]
+    public function testGetAllCookies(array $cookiesArray): void
     {
-        $header1 = 'CONTENT_TYPE';
-        $header1Value = 'text/html';
-        $header2 = 'HTTP_ACCEPT_LANGUAGE';
-        $header2Value = 'ro-RO';
+        $_COOKIE = $cookiesArray;
 
-        $requestForm1 = 'Content-Type';
-        $requestForm2 = 'Accept-Language';
+        $this->headersProvider->expects($this->never())
+            ->method('getHeaders');
 
-        $_SERVER[$header1] = $header1Value;
-        $_SERVER[$header2] = $header2Value;
 
-        $request = new Request(
-            $this->addMockHeadersProvider(
-                callCount: 1,
-                return:  [
-                    $requestForm1 => $header1Value,
-                    $requestForm2 => $header2Value,
+        $this->assertSame($cookiesArray, $this->request->getCookies());
+    }
+
+    public static function getAllCookiesDataProvider(): array
+    {
+        return [
+            "No cookies" => [
+                [],
+            ],
+            "Cookies" => [
+                [
+                    'user_id' => '123',
+                    'theme' => 'dark',
                 ],
-            )
-        );
-
-        $this->assertSame($header1Value, $request->getHeader($requestForm1));
-        $this->assertSame($header2Value, $request->getHeader($requestForm2));
+            ],
+        ];
     }
 
-    public function testGetHeaderMixedCaseInput(): void
+    #[DataProvider('getCookieDataProvider')]
+    public function testGetCookie(array $cookies, string $cookieName, mixed $expectedValue): void
     {
-        $header1 = 'CONTENT_TYPE';
-        $header1Value = 'text/html';
-        $header2 = 'HTTP_ACCEPT_LANGUAGE';
-        $header2Value = 'ro-RO';
+        $_COOKIE = $cookies;
 
-        $_SERVER[$header1] = $header1Value;
-        $_SERVER[$header2] = $header2Value;
+        $this->headersProvider->expects($this->never())
+            ->method('getHeaders');
 
-        $input1 = 'contEnt-tYpe';
-        $input2 = 'ACCEPT-language';
+        $this->assertSame($expectedValue, $this->request->getCookie($cookieName));
+    }
 
-        $requestForm1 = 'Content-Type';
-        $requestForm2 = 'Accept-Language';
-
-        $request = new Request(
-            $this->addMockHeadersProvider(
-                callCount: 1,
-                return:  [
-                    $requestForm1 => $header1Value,
-                    $requestForm2 => $header2Value,
+    public static function getCookieDataProvider(): array
+    {
+        return [
+            'Non existent cookie - empty cookies array' => [
+                [],
+                'nocookie',
+                null,
+            ],
+            'Non existent cookie - no matching value' => [
+                ['cookie1' => 'value1'],
+                'cookie2',
+                null,
+            ],
+            'Existing cookie - strign value' => [
+                ['cookie1' => 'value1'],
+                'cookie1',
+                'value1',
+            ],
+            'Existing cookie - array value' => [
+                ['cookie1' => ['value1']],
+                'cookie1',
+                ['value1'],
+            ],
+            'Existing cookie - array value - with path' => [
+                [
+                    'cookie1' => [
+                        'value1' => 'subValue1',
+                    ],
                 ],
-            )
-        );
-
-        $this->assertSame($header1Value, $request->getHeader($input1));
-        $this->assertSame($header2Value, $request->getHeader($input2));
-    }
-
-    public function testGetAllCookiesEmpty(): void
-    {
-        $request = new Request($this->addMockHeadersProvider(callCount: 0));
-
-        $this->assertSame([], $request->getCookies());
-    }
-
-    public function testGetAllCookiesNonEmpty(): void
-    {
-        $expected = [
-            'user_id' => '123',
-            'theme' => 'dark',
+                'cookie1.value1',
+                'subValue1',
+            ],
         ];
-
-        $_COOKIE = $expected;
-
-        $request = new Request($this->addMockHeadersProvider(callCount: 0));
-
-        $this->assertSame($expected, $request->getCookies());
-    }
-
-    public function testGetCookieEmptyCoockieArray(): void
-    {
-        $request = new Request($this->addMockHeadersProvider(callCount: 0));
-
-        $this->assertSame(null, $request->getCookie('test'));
-    }
-
-    public function testGetCookieNonExistentValue(): void
-    {
-        $_COOKIE = [
-            'succes' => 'success'
-        ];
-
-        $request = new Request($this->addMockHeadersProvider(callCount: 0));
-
-        $this->assertSame(null, $request->getCookie('failure'));
-    }
-
-    public function testGetCookieExistentValue(): void
-    {
-        $_COOKIE = [
-            'success' => 'success'
-        ];
-
-        $request = new Request($this->addMockHeadersProvider(callCount: 0));
-
-        $this->assertSame('success', $request->getCookie('success'));
-    }
-
-    public function testGetCookieExistentValueArray(): void
-    {
-        $expected = ['success1', 'success2'];
-        $_COOKIE = ['success' => $expected];
-
-        $request = new Request($this->addMockHeadersProvider(callCount: 0));
-
-        $this->assertSame($expected, $request->getCookie('success'));
-    }
-
-    public function testGetCookieExistentValueArrayWithPath(): void
-    {
-        $_COOKIE = ['success' => ['success1', 'success2']];
-
-        $request = new Request($this->addMockHeadersProvider(callCount: 0));
-
-        $this->assertSame('success1', $request->getCookie('success.0'));
     }
 
     public function testHasCookie(): void
     {
         $_COOKIE = ['success' => 'success'];
 
-        $request = new Request($this->addMockHeadersProvider(callCount: 0));
+        $this->headersProvider->expects($this->never())
+            ->method('getHeaders');
 
-        $this->assertTrue($request->hasCookie('success'));
-        $this->assertFalse($request->hasCookie('failure'));
+        $this->assertTrue($this->request->hasCookie('success'));
+        $this->assertFalse($this->request->hasCookie('failure'));
     }
 }

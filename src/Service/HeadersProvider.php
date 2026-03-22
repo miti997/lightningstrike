@@ -4,11 +4,18 @@ namespace Lightningstrike\Service;
 
 class HeadersProvider implements HeadersProviderInterface
 {
+    /** @var array<string,mixed> */
+    private array $headers = [];
+
     /**
      * @return array<string, mixed>
      */
     public function getHeaders(): array
     {
+        if ($this->headers !== []) {
+            return $this->headers;
+        }
+
         if (function_exists('\getallheaders')) {
             return \getallheaders();
         }
