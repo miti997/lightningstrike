@@ -25,6 +25,7 @@ class RequestTest extends TestCase
         $this->request = new Request($this->headersProvider);
     }
 
+    /** @param array<string,string> $expected */
     #[DataProvider('requestAllDataProvider')]
     public function testGetQueryParams(array $expected): void
     {
@@ -35,6 +36,7 @@ class RequestTest extends TestCase
         $this->assertSame($expected, $this->request->getQueryParams());
     }
 
+    /** @return array<string, list<array<string, string>>> */
     public static function requestAllDataProvider(): array
     {
         return [
@@ -43,6 +45,7 @@ class RequestTest extends TestCase
         ];
     }
 
+    /** @param array<string,string> $expected */
     #[DataProvider('requestAllDataProvider')]
     public function testGetBody(array $expected): void
     {
@@ -53,7 +56,7 @@ class RequestTest extends TestCase
         $this->assertSame($expected, $this->request->getBody());
     }
 
-
+    /** @param array<string,mixed> $get */
     #[DataProvider('requestOneDataProvider')]
     public function testGetQueryParam(array $get, string $path, mixed $expected): void
     {
@@ -64,6 +67,7 @@ class RequestTest extends TestCase
         $this->assertSame($expected, $this->request->getQueryParam($path));
     }
 
+    /** @return array<string,mixed> */
     public static function requestOneDataProvider(): array
     {
         return [
@@ -117,7 +121,7 @@ class RequestTest extends TestCase
         ];
     }
 
-
+    /** @param array<string,mixed> $post */
     #[DataProvider('requestOneDataProvider')]
     public function testGetBodyParam(array $post, string $path, mixed $expected): void
     {
@@ -174,14 +178,17 @@ class RequestTest extends TestCase
         );
     }
 
+    /**
+     * @param array<string, mixed> $headers
+     * @param array<string, mixed> $processedHeaders
+     */
     #[DataProvider('getHeaderProvider')]
     public function testGetHeaderProperInput(
         array $headers,
         array $processedHeaders,
         string $searchByHeaderName,
         ?string $expectedHeaderValue
-    ): void
-    {
+    ): void {
         $_SERVER = $headers;
 
         $this->headersProvider->expects($this->once())
@@ -191,6 +198,7 @@ class RequestTest extends TestCase
         $this->assertSame($expectedHeaderValue, $this->request->getHeader($searchByHeaderName));
     }
 
+    /** @return array<string,mixed> */
     public static function getHeaderProvider(): array
     {
         $contentTypeProcessedName = 'Content-Type';
@@ -240,6 +248,7 @@ class RequestTest extends TestCase
         ];
     }
 
+    /** @param array<string,mixed> $cookiesArray */
     #[DataProvider('getAllCookiesDataProvider')]
     public function testGetAllCookies(array $cookiesArray): void
     {
@@ -252,6 +261,7 @@ class RequestTest extends TestCase
         $this->assertSame($cookiesArray, $this->request->getCookies());
     }
 
+    /** @return array<string,mixed> */
     public static function getAllCookiesDataProvider(): array
     {
         return [
@@ -267,6 +277,7 @@ class RequestTest extends TestCase
         ];
     }
 
+    /** @param array<string,mixed> $cookies */
     #[DataProvider('getCookieDataProvider')]
     public function testGetCookie(array $cookies, string $cookieName, mixed $expectedValue): void
     {
@@ -278,6 +289,7 @@ class RequestTest extends TestCase
         $this->assertSame($expectedValue, $this->request->getCookie($cookieName));
     }
 
+    /** @return array<string,mixed> */
     public static function getCookieDataProvider(): array
     {
         return [
