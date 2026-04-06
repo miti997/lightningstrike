@@ -5,7 +5,7 @@ namespace Lightningstrike\RequestHandler;
 use Lightningstrike\Request\RequestInterface;
 use Lightningstrike\Response\ResponseInterface;
 
-abstract class AbstractMiddleware implements MiddlewareInterface, RequestHandlerInterface
+abstract class AbstractMiddleware implements MiddlewareInterface
 {
     public function __construct(private RequestHandlerInterface $next)
     {
