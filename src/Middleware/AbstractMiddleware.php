@@ -1,8 +1,9 @@
 <?php
 
-namespace Lightningstrike\RequestHandler;
+namespace Lightningstrike\Middleware;
 
 use Lightningstrike\Request\RequestInterface;
+use Lightningstrike\RequestHandler\RequestHandlerInterface;
 use Lightningstrike\Response\ResponseInterface;
 
 abstract class AbstractMiddleware implements MiddlewareInterface

@@ -9,15 +9,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(Response::class)]
 class ResponseTest extends TestCase
 {
-    protected function setUp(): void
-    {
-        if (headers_sent()) {
-            $this->markTestSkipped('Headers already sent');
-        }
-
-        header_remove();
-    }
-
     public function testSendOutputsBodyAndHeaders(): void
     {
 
