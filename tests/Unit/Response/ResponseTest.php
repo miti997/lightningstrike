@@ -23,7 +23,7 @@ class ResponseTest extends TestCase
         $output = \ob_get_clean();
 
         $this->assertSame('Hello World', $output);
-        $this->assertSame(['Content-type: text/plain;charset=UTF-8'], xdebug_get_headers());
+        $this->assertSame(['Content-Type' => 'text/plain'], $response->getHeaders());
         $this->assertSame(Response::HTTP_OK, http_response_code());
     }
 }

@@ -11,7 +11,10 @@ use Lightningstrike\RequestHandler\RequestHandlerInterface;
 
 class Route
 {
-    private array $middlewareQueue = [];
+    /** @var array<int, string> */
+    public array $middlewareQueue = [];
+    /** @var array<string, string> */
+    public array $paramPatterns = [];
 
     public function __construct(
         public string $method,
@@ -28,7 +31,7 @@ class Route
         }
     }
 
-    public function addMiddleware(string $middleware)
+    public function addMiddleware(string $middleware): self
     {
         if (!class_exists($middleware)) {
             throw new MiddlewareNotFound($middleware);
@@ -39,10 +42,13 @@ class Route
         }
 
         $this->middlewareQueue[] = $middleware;
+
+        return $this;
     }
 
-    public function getMiddlewareQueue(): array
+    public function where(string $param, string $pattern): self
     {
-        return array_reverse($this->middlewareQueue);
+        $this->paramPatterns[$param] = $pattern;
+        return $this;
     }
 }

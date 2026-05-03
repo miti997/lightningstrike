@@ -1,6 +1,6 @@
 <?php
 
-namespace Lightningstrike\Tests\Unit\Response;
+namespace Lightningstrike\Tests\Unit\Routing;
 
 use Lightningstrike\Exception\Script\InvalidScriptClass;
 use Lightningstrike\Exception\Script\ScriptClassNotFound;
@@ -77,22 +77,24 @@ class RouteBuilderTest extends TestCase
         $path1 = '/products';
 
         $name2 = 'name2';
-        $path2 = '/orders';
+        $path2 = '/orders/{id}';
         $script1 = $script2 = AbstractScript::class;
 
         $route1 = $this->routeBuilder->post(name: $name1, path: $path1, script: $script1);
 
         $route2 = $this->routeBuilder->post(name: $name2, path: $path2, script: $script2);
+        $route2->where('id', '\d+');
 
         $this->assertSame($name2, $route2->name);
         $this->assertSame($path2, $route2->path);
         $this->assertSame($script2, $route2->requestHandler);
-        $this->assertSame(Request::METHOD_GET, $route2->method);
+        $this->assertSame(Request::METHOD_POST, $route2->method);
+        $this->assertSame(['id' => '\d+'], $route2->paramPatterns);
 
         $this->assertSame($name1, $route1->name);
         $this->assertSame($path1, $route1->path);
         $this->assertSame($script1, $route1->requestHandler);
-        $this->assertSame(Request::METHOD_GET, $route1->method);
+        $this->assertSame(Request::METHOD_POST, $route1->method);
     }
 
     public function testPostNonExistentViewClass(): void

@@ -1,6 +1,6 @@
 <?php
 
-namespace Lightningstrike\Tests\Unit\Response;
+namespace Lightningstrike\Tests\Unit\Routing;
 
 use Lightningstrike\Exception\Middleware\InvalidMiddlewareClass;
 use Lightningstrike\Exception\Middleware\MiddlewareNotFound;
@@ -64,6 +64,20 @@ class RouteTest extends TestCase
 
         $route->addMiddleware(AbstractMiddleware::class);
 
-        $this->assertSame([AbstractMiddleware::class], $route->getMiddlewareQueue());
+        $this->assertSame([AbstractMiddleware::class], $route->middlewareQueue);
+    }
+
+    public function testAddPattern(): void
+    {
+        $method = Request::METHOD_GET;
+        $name = 'test';
+        $path = 'path/{id}';
+        $handler = AbstractMiddleware::class;
+
+        $route = new Route($method, $name, $path, $handler);
+
+        $route->where('id', '\d+');
+
+        $this->assertSame(['id' => '\d+'], $route->paramPatterns);
     }
 }

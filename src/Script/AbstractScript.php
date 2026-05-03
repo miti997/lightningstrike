@@ -9,6 +9,6 @@ abstract class AbstractScript implements ScriptInterface
 {
     public function handle(RequestInterface $request): ResponseInterface
     {
-       return $this->process($request);
+        return $this->process($request);
     }
 }
