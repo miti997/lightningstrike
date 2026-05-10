@@ -8,7 +8,7 @@ use Lightningstrike\Response\ResponseInterface;
 
 abstract class AbstractMiddleware implements MiddlewareInterface
 {
-    public function __construct(private RequestHandlerInterface $next)
+    public function __construct(private ?RequestHandlerInterface $next = null)
     {
     }
 

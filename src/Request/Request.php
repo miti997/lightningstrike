@@ -2,8 +2,10 @@
 
 namespace Lightningstrike\Request;
 
+use Lightningstrike\Exception\Request\InvalidRequestMethod;
 use Lightningstrike\Service\HeadersProviderInterface;
 use Lightningstrike\Trait\ReadsArrayPaths;
+use Override;
 
 class Request implements RequestInterface
 {
@@ -13,8 +15,10 @@ class Request implements RequestInterface
     public const string METHOD_POST = 'POST';
     private const string COOKIE = 'COOKIE';
 
+    private array $pathParams = [];
+
     public function __construct(
-        private readonly HeadersProviderInterface $headersProvider
+        private readonly HeadersProviderInterface $headersProvider,
     ) {
     }
 
@@ -129,5 +133,32 @@ class Request implements RequestInterface
         $cookie = $this->getCookie($cookie);
 
         return $cookie !== null;
+    }
+
+    public function getUri(): string
+    {
+        return $_SERVER['REQUEST_URI'] ?? '/';
+    }
+
+    public function getRequestMethod(): string
+    {
+        return $_SERVER['REQUEST_METHOD'];
+    }
+
+    #[Override]
+    public function setPathParam(string $name, mixed $value): void
+    {
+        $this->pathParams[$name] = $value;
+    }
+
+    #[Override]
+    public function getPathParam(string $name): mixed
+    {
+        return $this->pathParams[$name];
+    }
+
+    public function getPathParams(): array
+    {
+        return $this->pathParams;
     }
 }

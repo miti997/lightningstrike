@@ -8,7 +8,6 @@ use PHPUnit\Framework\TestCase;
 use Lightningstrike\Routing\RouteBuilder;
 use Lightningstrike\Script\AbstractScript;
 use Lightningstrike\View\AbstractView;
-use Override;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 #[CoversClass(RouteBuilder::class)]

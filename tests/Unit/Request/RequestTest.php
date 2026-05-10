@@ -335,4 +335,21 @@ class RequestTest extends TestCase
         $this->assertTrue($this->request->hasCookie('success'));
         $this->assertFalse($this->request->hasCookie('failure'));
     }
+
+    public function testGetPathParams(): void
+    {
+        $this->headersProvider->expects($this->never())
+            ->method('getHeaders');
+
+        $this->assertSame([], $this->request->getPathParams());
+    }
+
+    public function testGetPathParam(): void
+    {
+        $this->request->setPathParam('test', 'test');
+        $this->headersProvider->expects($this->never())
+            ->method('getHeaders');
+
+        $this->assertSame('test', $this->request->getPathParam('test'));
+    }
 }
