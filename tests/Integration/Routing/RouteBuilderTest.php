@@ -126,7 +126,7 @@ class RouteBuilderTest extends TestCase
                                     RouteBuilder::FIXED => [],
                                     RouteBuilder::DYNAMIC => [],
                                     RouteBuilder::HANDLER => AbstractScript::class,
-                                    RouteBuilder::PATTERN => '\d+',
+                                    RouteBuilder::PATTERN => '/\d+/',
                                     RouteBuilder::MIDDLEWARE => [AbstractMiddleware::class],
                                 ],
                             ],

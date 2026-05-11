@@ -89,7 +89,7 @@ class RouteBuilderTest extends TestCase
         $this->assertSame($path2, $route2->path);
         $this->assertSame($script2, $route2->requestHandler);
         $this->assertSame(Request::METHOD_POST, $route2->method);
-        $this->assertSame(['id' => '\d+'], $route2->paramPatterns);
+        $this->assertSame(['id' => '/\d+/'], $route2->paramPatterns);
 
         $this->assertSame($name1, $route1->name);
         $this->assertSame($path1, $route1->path);

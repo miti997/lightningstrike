@@ -67,7 +67,7 @@ class RouteTest extends TestCase
         $this->assertSame([AbstractMiddleware::class], $route->middlewareQueue);
     }
 
-    public function testAddPattern(): void
+    public function testAddPatternSuccess(): void
     {
         $method = Request::METHOD_GET;
         $name = 'test';
@@ -78,6 +78,20 @@ class RouteTest extends TestCase
 
         $route->where('id', '\d+');
 
-        $this->assertSame(['id' => '\d+'], $route->paramPatterns);
+        $this->assertSame(['id' => '/\d+/'], $route->paramPatterns);
+    }
+
+    public function testAddPatternFailure(): void
+    {
+        $method = Request::METHOD_GET;
+        $name = 'test';
+        $path = 'path/{id}';
+        $handler = AbstractMiddleware::class;
+
+        $route = new Route($method, $name, $path, $handler);
+
+
+        $this->expectException(\InvalidArgumentException::class);
+        $route->where('id', '/\d+');
     }
 }

@@ -48,7 +48,25 @@ class Route
 
     public function where(string $param, string $pattern): self
     {
+        $pattern = $this->normalizePattern($pattern);
+
         $this->paramPatterns[$param] = $pattern;
         return $this;
+    }
+
+    private function normalizePattern(string $pattern): string
+    {
+        $first = $pattern[0];
+        $last  = substr($pattern, -1);
+
+        if ($first === '/' && $last === '/') {
+            return $pattern;
+        }
+
+        if ($first === '/' || $last === '/') {
+            throw new \InvalidArgumentException("Invalid regex pattern: {$pattern}");
+        }
+
+        return '/' . $pattern . '/';
     }
 }

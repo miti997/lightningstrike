@@ -2,15 +2,16 @@
 
 namespace Lightningstrike\Tests\Mocks;
 
+use Lightningstrike\Request\RequestInterface;
 use Lightningstrike\Response\Response;
 use Lightningstrike\Response\ResponseInterface;
-use Lightningstrike\View\AbstractView;
+use Lightningstrike\Script\AbstractScript;
 use Override;
 
-class TestView extends AbstractView
+class TestScript extends AbstractScript
 {
     #[Override]
-    public function render(): ResponseInterface
+    public function process(RequestInterface $request): ResponseInterface
     {
         return new Response(body: 'Success');
     }

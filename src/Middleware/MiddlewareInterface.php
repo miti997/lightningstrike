@@ -8,5 +8,6 @@ use Lightningstrike\Response\ResponseInterface;
 
 interface MiddlewareInterface extends RequestHandlerInterface
 {
-    public function process(RequestInterface $request, ?RequestHandlerInterface $next = null): ResponseInterface;
+    public function process(RequestInterface $request, RequestHandlerInterface $next): ResponseInterface;
+    public function setNext(RequestHandlerInterface $next): void;
 }

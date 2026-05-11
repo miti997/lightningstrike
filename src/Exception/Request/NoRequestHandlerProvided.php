@@ -6,7 +6,7 @@ use Exception;
 
 class NoRequestHandlerProvided extends Exception
 {
-     public function __construct()
+    public function __construct()
     {
         parent::__construct("No request handler provided");
     }

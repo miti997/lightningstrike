@@ -15,6 +15,7 @@ class Request implements RequestInterface
     public const string METHOD_POST = 'POST';
     private const string COOKIE = 'COOKIE';
 
+    /** @var array<string,mixed> */
     private array $pathParams = [];
 
     public function __construct(
@@ -137,12 +138,18 @@ class Request implements RequestInterface
 
     public function getUri(): string
     {
-        return $_SERVER['REQUEST_URI'] ?? '/';
+         $uri = $_SERVER['REQUEST_URI'] ?? '/';
+
+            return is_string($uri) ? $uri : '/';
     }
 
-    public function getRequestMethod(): string
+    public function getRequestMethod(): ?string
     {
-        return $_SERVER['REQUEST_METHOD'];
+        $method = $_SERVER['REQUEST_METHOD'];
+
+        return is_string($method)
+            ? strtoupper($method)
+            : null;
     }
 
     #[Override]

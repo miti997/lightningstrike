@@ -2,20 +2,19 @@
 
 namespace Lightningstrike\Tests\Integration\Middleware;
 
-use Lightningstrike\Middleware\AbstractMiddleware;
+use Lightningstrike\Exception\Request\InvalidRequestMethod;
+use Lightningstrike\Exception\Request\NoRouteMatched;
 use Lightningstrike\Middleware\RoutingMiddleware;
 use Lightningstrike\Request\Request;
 use Lightningstrike\Request\RequestInterface;
 use Lightningstrike\Response\Response;
-use Lightningstrike\Response\ResponseInterface;
 use Lightningstrike\Routing\RouteBuilder;
-use Lightningstrike\Script\AbstractScript;
+use Lightningstrike\Tests\Mocks\TestMiddleware;
+use Lightningstrike\Tests\Mocks\TestScript;
 use Lightningstrike\Tests\Mocks\TestView;
 use Lightningstrike\Tests\Mocks\TestViewNotFound;
-use Lightningstrike\View\AbstractView;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(RoutingMiddleware::class)]
@@ -23,6 +22,7 @@ class RoutingMiddlewareTest extends TestCase
 {
     private RoutingMiddleware $routingMiddleware;
 
+    /** @var array<string,mixed> $routes */
     private array $routes = [
         Request::METHOD_GET => [
             RouteBuilder::FIXED => [
@@ -62,7 +62,7 @@ class RoutingMiddlewareTest extends TestCase
                             RouteBuilder::FIXED => [],
                             RouteBuilder::DYNAMIC => [],
                             RouteBuilder::HANDLER => TestView::class,
-                            RouteBuilder::PATTERN => '\d+',
+                            RouteBuilder::PATTERN => '/\d+/',
                             RouteBuilder::MIDDLEWARE => [],
                         ],
                     ],
@@ -82,14 +82,14 @@ class RoutingMiddlewareTest extends TestCase
                         'id' => [
                             RouteBuilder::FIXED => [],
                             RouteBuilder::DYNAMIC => [],
-                            RouteBuilder::HANDLER => AbstractScript::class,
-                            RouteBuilder::PATTERN => '\d+',
-                            RouteBuilder::MIDDLEWARE => [AbstractMiddleware::class],
+                            RouteBuilder::HANDLER => TestScript::class,
+                            RouteBuilder::PATTERN => '/\d+/',
+                            RouteBuilder::MIDDLEWARE => [TestMiddleware::class],
                         ],
                     ],
-                    RouteBuilder::HANDLER => AbstractScript::class,
+                    RouteBuilder::HANDLER => TestScript::class,
                     RouteBuilder::MIDDLEWARE => [
-                        AbstractMiddleware::class
+                        TestMiddleware::class
                     ],
                 ]
             ],
@@ -112,8 +112,7 @@ class RoutingMiddlewareTest extends TestCase
         string $uri,
         int $statusCode,
         string $body,
-    ): void
-    {
+    ): void {
         $request = $this->createMock(RequestInterface::class);
 
         $request->expects($this->once())
@@ -130,6 +129,7 @@ class RoutingMiddlewareTest extends TestCase
         $this->assertEquals($body, $actualResponse->getBody());
     }
 
+    /** @return array<string, list<int|string>> */
     public static function matchRouteDataProvider(): array
     {
         $success = 'Success';
@@ -177,6 +177,49 @@ class RoutingMiddlewareTest extends TestCase
                 Response::HTTP_OK,
                 $success,
             ],
+            'POST users - includes middleware' => [
+                Request::METHOD_POST,
+                'users',
+                Response::HTTP_FOUND,
+                $success,
+            ],
+            'POST user - includes middleware' => [
+                Request::METHOD_POST,
+                'users/3',
+                Response::HTTP_FOUND,
+                $success,
+            ],
         ];
+    }
+
+    public function testInvalidRequestMethod(): void
+    {
+        $request = $this->createMock(RequestInterface::class);
+
+        $request->expects($this->once())
+            ->method('getRequestMethod')
+            ->willReturn('PUT');
+
+        $request->expects($this->never())
+            ->method('getUri');
+
+        $this->expectException(InvalidRequestMethod::class);
+        $this->routingMiddleware->handle($request);
+    }
+
+    public function testRouteNotInArray(): void
+    {
+        $request = $this->createMock(RequestInterface::class);
+
+        $request->expects($this->once())
+            ->method('getRequestMethod')
+            ->willReturn(Request::METHOD_GET);
+
+        $request->expects($this->once())
+            ->method('getUri')
+            ->willReturn('/some/wrong/uri');
+
+        $this->expectException(NoRouteMatched::class);
+        $this->routingMiddleware->handle($request);
     }
 }

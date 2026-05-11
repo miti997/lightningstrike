@@ -2,6 +2,7 @@
 
 namespace Lightningstrike\Middleware;
 
+use Lightningstrike\Exception\Request\InvalidMiddlewareException;
 use Lightningstrike\Exception\Request\InvalidRequestHandlerException;
 use Lightningstrike\Exception\Request\InvalidRequestMethod;
 use Lightningstrike\Exception\Request\NoRequestHandlerProvided;
@@ -13,21 +14,26 @@ use Lightningstrike\Routing\RouteBuilder;
 
 class RoutingMiddleware extends AbstractMiddleware
 {
+    /** @param array<string,mixed> $routes */
     public function __construct(private array $routes)
+    {}
+
+    public function handle(RequestInterface $request): ResponseInterface
     {
-        parent::__construct(null);
+        return $this->process($request, $this->getMatchedHandler($request));
     }
 
-    public function process(RequestInterface $request, ?RequestHandlerInterface $next = null): ResponseInterface
+    private function getMatchedHandler(RequestInterface $request): RequestHandlerInterface
     {
-        $uri = $request->getUri();
-        $method = $request->getRequestMethod();
+        $method = (string) $request->getRequestMethod();
 
         if (!isset($this->routes[$method])) {
             throw new InvalidRequestMethod($method);
         } else {
             $current = $this->routes[$method];
         }
+
+        $uri = $request->getUri();
 
         $uri = trim($uri, '/');
 
@@ -38,13 +44,25 @@ class RoutingMiddleware extends AbstractMiddleware
             $parseCount = 0;
 
             foreach ($uriParts as $part) {
-                if (isset($current[RouteBuilder::FIXED][$part])) {
+                if (
+                    is_array($current) &&
+                    is_array($current[RouteBuilder::FIXED]) &&
+                    isset($current[RouteBuilder::FIXED][$part])
+                ) {
                     $current = $current[RouteBuilder::FIXED][$part];
                     $parseCount += 1;
-                } elseif (isset($current[RouteBuilder::DYNAMIC]) && !empty($current[RouteBuilder::DYNAMIC])) {
+                } elseif (
+                    is_array($current) &&
+                    is_array($current[RouteBuilder::DYNAMIC]) &&
+                    !empty($current[RouteBuilder::DYNAMIC])
+                ) {
                     foreach ($current[RouteBuilder::DYNAMIC] as $paramName => $dynamicPart) {
-                        if (isset($dynamicPart[RouteBuilder::PATTERN]) && $dynamicPart[RouteBuilder::PATTERN] !== null) {
-                            if (preg_match($this->normalizePattern($dynamicPart[RouteBuilder::PATTERN]), $part)) {
+                        if (
+                            is_array($dynamicPart) &&
+                            isset($dynamicPart[RouteBuilder::PATTERN]) &&
+                            is_string($dynamicPart[RouteBuilder::PATTERN])
+                        ) {
+                            if (preg_match($dynamicPart[RouteBuilder::PATTERN], $part)) {
                                 $current = $dynamicPart;
                                 $parseCount += 1;
                                 $request->setPathParam($paramName, $part);
@@ -71,34 +89,36 @@ class RoutingMiddleware extends AbstractMiddleware
             throw new NoRouteMatched($uri);
         }
 
-        if (!isset($current[RouteBuilder::HANDLER]) || $current[RouteBuilder::HANDLER] === null) {
+        if (!is_array($current) || !isset($current[RouteBuilder::HANDLER])) {
             throw new NoRequestHandlerProvided();
         } else {
             $handler = $current[RouteBuilder::HANDLER];
         }
 
-        $handlerInstance = new $handler();
+        $next = new $handler();
 
-        if (!$handlerInstance instanceof RequestHandlerInterface) {
-            throw new InvalidRequestHandlerException($handlerInstance::class);
-        } else {
-            return $handlerInstance->handle($request);
+        if (!$next instanceof RequestHandlerInterface) {
+            throw new InvalidRequestHandlerException($next::class);
         }
+
+        if (is_array($current[RouteBuilder::MIDDLEWARE]) && !empty($current[RouteBuilder::MIDDLEWARE])) {
+            foreach (array_reverse($current[RouteBuilder::MIDDLEWARE]) as $middleware) {
+                $middlewareInstance = new $middleware();
+                if (!$middlewareInstance instanceof MiddlewareInterface) {
+                    throw new InvalidMiddlewareException($middlewareInstance::class);
+                }
+
+                $middlewareInstance->setNext($next);
+
+                $next = $middlewareInstance;
+            }
+        }
+
+        return $next;
     }
 
-    private function normalizePattern(string $pattern): string
+    public function process(RequestInterface $request, RequestHandlerInterface $next): ResponseInterface
     {
-        $first = $pattern[0];
-        $last  = substr($pattern, -1);
-
-        if ($first === '/' && $last === '/') {
-            return $pattern;
-        }
-
-        if ($first === '/' || $last === '/') {
-            throw new \InvalidArgumentException("Invalid regex pattern: {$pattern}");
-        }
-
-        return '/' . $pattern . '/';
+        return $next->handle($request);
     }
 }

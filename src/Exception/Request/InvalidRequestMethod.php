@@ -6,7 +6,7 @@ use Exception;
 
 class InvalidRequestMethod extends Exception
 {
-     public function __construct(string $request)
+    public function __construct(string $request)
     {
         parent::__construct("Request of type {$request} is not supported");
     }
