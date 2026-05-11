@@ -16,7 +16,8 @@ class RoutingMiddleware extends AbstractMiddleware
 {
     /** @param array<string,mixed> $routes */
     public function __construct(private array $routes)
-    {}
+    {
+    }
 
     public function handle(RequestInterface $request): ResponseInterface
     {
