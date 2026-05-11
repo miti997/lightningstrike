@@ -46,4 +46,15 @@ interface RequestInterface
     public function getCookie(string $cookie): string|array|null;
 
     public function hasCookie(string $cookie): bool;
+
+    public function getUri(): string;
+
+    public function getRequestMethod(): ?string;
+
+    public function setPathParam(string $name, mixed $value): void;
+
+    public function getPathParam(string $name): mixed;
+
+    /** @return array<string,mixed> */
+    public function getPathParams(): array;
 }
