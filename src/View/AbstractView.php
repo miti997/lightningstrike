@@ -2,6 +2,7 @@
 
 namespace Lightningstrike\View;
 
+use Lightningstrike\Exception\View\TemplateNotFound;
 use Lightningstrike\Request\RequestInterface;
 use Lightningstrike\Response\ResponseInterface;
 
@@ -24,5 +25,23 @@ abstract class AbstractView implements ViewInterface
         $this->afterRender();
 
         return $response;
+    }
+
+    /**
+     * @param array<string,mixed> $data
+     */
+    protected function renderTemplate(string $template, array $data = []): string|false
+    {
+        if (!file_exists($template)) {
+            throw new TemplateNotFound($template);
+        }
+
+        \extract($data);
+
+        \ob_start();
+
+        include $template;
+
+        return \ob_get_clean();
     }
 }
