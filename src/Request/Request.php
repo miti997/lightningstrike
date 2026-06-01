@@ -145,7 +145,7 @@ class Request implements RequestInterface
 
     public function getRequestMethod(): ?string
     {
-        $method = $_SERVER['REQUEST_METHOD'];
+        $method = $_SERVER['REQUEST_METHOD'] ?? null;
 
         return is_string($method)
             ? strtoupper($method)
